@@ -2,8 +2,7 @@ import random
 from math import sqrt, log
 from utilities.node import Node
 
-class MonteCarloTreeSearch():
-
+class MonteCarloTreeSearch:
     def __init__(self, env, tree):
         self.env = env
         self.tree = tree
@@ -13,7 +12,11 @@ class MonteCarloTreeSearch():
 
     def expand(self, node):
         action = node.untried_action()
-        state, reward, done, _ = self.env.step(action)
+        result = self.env.step(action)
+        if len(result) == 4:
+            state, reward, done, info = result
+        else:
+            state, reward, done, truncated, info = result
         new_node = Node(state=state, action=action, action_space=self.action_space, reward=reward, terminal=done)
         self.tree.add_node(new_node, node)
         return new_node
@@ -23,8 +26,12 @@ class MonteCarloTreeSearch():
             return node.reward
 
         while True:
-            action = random.randint(0, self.action_space-1)
-            state, reward, done, _ = self.env.step(action)
+            action = random.randint(0, self.action_space - 1)
+            result = self.env.step(action)
+            if len(result) == 4:
+                state, reward, done, info = result
+            else:
+                state, reward, done, truncated, info = result
             if done:
                 return reward
 
@@ -52,7 +59,12 @@ class MonteCarloTreeSearch():
                 return self.expand(node)
             else:
                 node = self.best_child(node, exploration_constant=1.0/sqrt(2.0))
-                state, reward, done, _ = self.env.step(node.action)
+                result = self.env.step(node.action)
+                # print(f"Step result: {result}")  # Debug statement
+                if len(result) == 4:
+                    state, reward, done, info = result
+                else:
+                    state, reward, done, truncated, info = result
                 assert node.state == state
         return node
 
@@ -60,19 +72,16 @@ class MonteCarloTreeSearch():
         while node:
             node.num_visits += 1
             node.total_simulation_reward += value
-            node.performance = node.total_simulation_reward/node.num_visits
+            node.performance = node.total_simulation_reward / node.num_visits
             node = self.tree.parent(node)
 
     def forward(self):
         self._forward(self.tree.root)
 
-    def _forward(self,node):
+    def _forward(self, node):
         best_child = self.best_child(node, exploration_constant=0)
-
         print("****** {} ******".format(best_child.state))
-
         for child in self.tree.children(best_child):
             print("{}: {:0.4f}".format(child.state, child.performance))
-
         if len(self.tree.children(best_child)) > 0:
             self._forward(best_child)

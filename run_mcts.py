@@ -13,7 +13,7 @@ def init_env():
     return gym.make('FrozenLakeNotSlippery-v0')
 
 def main():
-    random.seed(2)
+    random.seed(1)
     env = init_env()
     tree = Tree()
     monteCarloTreeSearch = MonteCarloTreeSearch(env=env, tree=tree)
