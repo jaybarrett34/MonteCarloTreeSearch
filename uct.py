@@ -60,7 +60,7 @@ class MonteCarloTreeSearch:
             else:
                 node = self.best_child(node, exploration_constant=1.0/sqrt(2.0))
                 result = self.env.step(node.action)
-                # print(f"Step result: {result}")  # Debug statement
+                # print(f"Step result: {result}")
                 if len(result) == 4:
                     state, reward, done, info = result
                 else:

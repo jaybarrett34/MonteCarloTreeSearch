@@ -1,4 +1,4 @@
-from model import MonteCarloTreeSearch
+from uct import MonteCarloTreeSearch
 import random
 from gym.envs.registration import register
 import gym
@@ -17,7 +17,7 @@ def main():
     env = init_env()
     tree = Tree()
     monteCarloTreeSearch = MonteCarloTreeSearch(env=env, tree=tree)
-    steps = 10000
+    steps = 100000
 
     for _ in range(0, steps):
         env.reset()
