@@ -85,3 +85,16 @@ class MonteCarloTreeSearch:
             print("{}: {:0.4f}".format(child.state, child.performance))
         if len(self.tree.children(best_child)) > 0:
             self._forward(best_child)
+
+    def find_best_action(self, state):
+        root = self.tree.root
+        self.env.reset()
+        self.env.s = state
+        for _ in range(1000):
+            node = root
+            self.env.s = node.state
+            node = self.tree_policy(node)
+            reward = self.default_policy(node)
+            self.backward(node, reward)
+        best_node = self.best_child(root, exploration_constant=0)
+        return best_node.action if best_node else None

@@ -12,8 +12,26 @@ def init_env():
     )
     return gym.make('FrozenLakeNotSlippery-v0')
 
+def print_grid(env):
+    desc = env.unwrapped.desc
+    color_map = {
+        b'S': '\033[92m',  
+        b'G': '\033[93m',
+        b'F': '\033[94m', 
+        b'H': '\033[91m',  
+    }
+    reset_color = '\033[0m'
+    cell_width = 6 
+
+    for i, row in enumerate(desc):
+        for j, col in enumerate(row):
+            color = color_map.get(col, reset_color)
+            position = i * len(row) + j
+            print(f"{color}{col.decode('utf-8')}[{position:2}]{reset_color}".ljust(cell_width), end=' ')
+        print()
+
 def main():
-    random.seed(1)
+    random.seed()
     env = init_env()
     tree = Tree()
     monteCarloTreeSearch = MonteCarloTreeSearch(env=env, tree=tree)
@@ -25,8 +43,10 @@ def main():
         reward = monteCarloTreeSearch.default_policy(node)
         monteCarloTreeSearch.backward(node, reward)
 
-    monteCarloTreeSearch.tree.show()
+    # monteCarloTreeSearch.tree.show()
     monteCarloTreeSearch.forward()
+    print("Final Environment Grid:")
+    print_grid(env)
 
 if __name__ == "__main__":
    main()
