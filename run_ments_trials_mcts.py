@@ -4,6 +4,8 @@ from gym.envs.registration import register
 import gym
 from utilities.tree import Tree
 import matplotlib.pyplot as plt
+import os
+from datetime import datetime
 
 def init_env():
     register(
@@ -32,7 +34,6 @@ def print_grid(env):
         print()
 
 def run_experiment(temperature, printGrid, steps=100000):
-    random.seed(1)
     env = init_env()
     tree = Tree()
     maximumEntropyTreeSearch = MaximumEntropyTreeSearch(env=env, tree=tree, temperature=temperature)
@@ -57,7 +58,9 @@ def run_experiment(temperature, printGrid, steps=100000):
     return goals_reached
 
 def main():
-    temperatures = [i/10.0 for i in range(1, 11)]
+    seed = 1
+    random.seed(seed)
+    temperatures = [i / 20.0 for i in range(1, 41)]
     results = []
     print_once = True
 
@@ -66,12 +69,21 @@ def main():
         print_once = False
         results.append((temp, goals_reached))
 
-    # Plot results
     temps, goals = zip(*results)
     plt.plot(temps, goals)
     plt.xlabel('Temperature')
     plt.ylabel('Goals Reached')
     plt.title('Goals Reached vs Temperature')
+
+    save_dir = 'trials/MENTS'
+    os.makedirs(save_dir, exist_ok=True)
+
+    timestamp = datetime.now().strftime('T%H:%M:%S_D%d:%m:%Y')
+    file_name = f"{timestamp}_MENTS_seed_{seed}.png"
+    file_path = os.path.join(save_dir, file_name)
+
+    plt.savefig(file_path)
+
     plt.show()
 
 if __name__ == "__main__":
