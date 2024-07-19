@@ -1,12 +1,13 @@
 import random
-from math import sqrt, log
+from math import sqrt, log, exp
 from utilities.node import Node
 
-class MonteCarloTreeSearch:
-    def __init__(self, env, tree):
+class MaximumEntropyTreeSearch:
+    def __init__(self, env, tree, temperature=0.4):
         self.env = env
         self.tree = tree
         self.action_space = self.env.action_space.n
+        self.temperature = temperature 
         state = self.env.reset()
         self.tree.add_node(Node(state=state, action=None, action_space=self.action_space, reward=0, terminal=False))
 
@@ -19,7 +20,6 @@ class MonteCarloTreeSearch:
             state, reward, done, truncated, info = result
         new_node = Node(state=state, action=action, action_space=self.action_space, reward=reward, terminal=done)
         self.tree.add_node(new_node, node)
-        # print(f"Expanded node {node.state} with action {action} to state {state} with reward {reward} and terminal {done}")
         return new_node
 
     def default_policy(self, node):
@@ -36,38 +36,40 @@ class MonteCarloTreeSearch:
             if done:
                 return reward
 
-    def compute_value(self, parent, child, exploration_constant):
+    def compute_entropy(self, parent, child, exploration_constant):
         exploitation_term = child.total_simulation_reward / child.num_visits
+        probabilities = [exploitation_term, 1 - exploitation_term]
+        entropy = -sum(p * log(p) for p in probabilities if p > 0)
         exploration_term = exploration_constant * sqrt(2 * log(parent.num_visits) / child.num_visits)
-        return exploitation_term + exploration_term
+        total_value = exploitation_term + self.temperature * entropy + exploration_term
+        return total_value, exploitation_term, entropy, exploration_term
+
+    def softmax(self, values):
+        max_val = max(values)
+        exp_values = [exp((v - max_val) / self.temperature) for v in values]
+        sum_exp_values = sum(exp_values)
+        return [ev / sum_exp_values for ev in exp_values]
 
     def best_child(self, node, exploration_constant):
-        best_child = self.tree.children(node)[0]
-        best_value = self.compute_value(node, best_child, exploration_constant)
-        iter_children = iter(self.tree.children(node))
-        next(iter_children)
-        for child in iter_children:
-            value = self.compute_value(node, child, exploration_constant)
-            if value > best_value:
-                best_child = child
-                best_value = value
-        return best_child
+        children = self.tree.children(node)
+        values = [self.compute_entropy(node, child, exploration_constant)[0] for child in children]
+        softmax_probs = self.softmax(values)
+        chosen_index = random.choices(range(len(children)), weights=softmax_probs, k=1)[0]
+        best_child = children[chosen_index]
+        best_value, best_exploitation, best_entropy, best_exploration = self.compute_entropy(node, best_child, exploration_constant)
+        return best_child, best_value, best_exploitation, best_entropy, best_exploration
 
-    def tree_policy(self):
-        node = self.tree.root
+    def tree_policy(self, node):
         while not node.terminal:
             if self.tree.is_expandable(node):
                 return self.expand(node)
             else:
-                node = self.best_child(node, exploration_constant=1.0/sqrt(2.0))
+                node, _, _, _, _ = self.best_child(node, exploration_constant=1.0/sqrt(2.0))
                 result = self.env.step(node.action)
-                # print(f"Step result: {result}")
                 if len(result) == 4:
                     state, reward, done, info = result
-                    # print(f"Best child for node {node.state} is {node.state} with value {node.total_simulation_reward / node.num_visits}")
                 else:
                     state, reward, done, truncated, info = result
-                    # print(f"Best child for node {node.state} is {node.state} with value {node.total_simulation_reward / node.num_visits}")
                 assert node.state == state
         return node
 
@@ -82,10 +84,15 @@ class MonteCarloTreeSearch:
         self._forward(self.tree.root)
 
     def _forward(self, node):
-        best_child = self.best_child(node, exploration_constant=0)
+        best_child, best_value, best_exploitation, best_entropy, best_exploration = self.best_child(node, exploration_constant=0)
         print("****** {} ******".format(best_child.state))
+        print(f"Best child for node {node.state} is {best_child.state} with value {best_value:.4f}")
+        print(f"Components: Exploitation={best_exploitation:.4f}, Entropy={best_entropy:.4f}, Exploration={best_exploration:.4f}")
+        
         for child in self.tree.children(best_child):
-            print("{}: {:0.4f}".format(child.state, child.performance))
+            _, exploitation, entropy, _ = self.compute_entropy(node, child, 0)
+            print(f"{child.state}: Exploitation={exploitation:.4f}, Entropy={entropy:.4f}")
+
         if len(self.tree.children(best_child)) > 0:
             self._forward(best_child)
 
@@ -99,5 +106,5 @@ class MonteCarloTreeSearch:
             node = self.tree_policy(node)
             reward = self.default_policy(node)
             self.backward(node, reward)
-        best_node = self.best_child(root, exploration_constant=0)
+        best_node, _, _, _, _ = self.best_child(root, exploration_constant=0)
         return best_node.action if best_node else None

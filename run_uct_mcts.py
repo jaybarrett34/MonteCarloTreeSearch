@@ -31,7 +31,7 @@ def print_grid(env):
         print()
 
 def main():
-    random.seed()
+    random.seed(1)
     env = init_env()
     tree = Tree()
     monteCarloTreeSearch = MonteCarloTreeSearch(env=env, tree=tree)
