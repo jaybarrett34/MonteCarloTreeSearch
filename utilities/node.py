@@ -7,12 +7,11 @@ class Node:
         self.identifier = str(uuid.uuid1())
         self.parent_identifier = None
         self.children_identifiers = []
-        self.untried_actions = list(range(action_space))
         self.state = state
-        self.total_simulation_reward = 0
-        self.num_visits = 0
-        self.performance = 0
         self.action = action
+        self.visit_count = 0
+        self.value = 0
+        self.untried_actions = list(range(action_space))
         self.reward = reward
         self.terminal = terminal
 
