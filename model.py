@@ -75,7 +75,7 @@ class MonteCarloTreeSearch:
         return q
 
     def evaluate(self, state):
-        # We 
+        # We can change reward values as needed. Represents goal, hole, tile
         if state.reward == 1:
             return 0
         elif state.reward == 0 and state.terminal:
