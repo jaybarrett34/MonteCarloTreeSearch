@@ -2,15 +2,35 @@ import gym
 import numpy as np
 
 class EnvironmentWrapper:
-    def __init__(self, env_name='FrozenLake-v1', is_slippery=True):
-        self.env = gym.make(env_name, is_slippery=is_slippery)
+    def __init__(self, env_name='FrozenLake-v1', is_slippery=False, 
+                 custom_map=None, env=None):
+        if env is None:
+            if custom_map:
+                self.env = gym.make(env_name, desc=custom_map, is_slippery=is_slippery)
+            else:
+                self.env = gym.make(env_name, is_slippery=is_slippery)
+        else:
+            self.env = env
         self.action_space = self.env.action_space
         self.observation_space = self.env.observation_space
-        self.nrow, self.ncol = 4, 4 
+
+        desc = self.env.unwrapped.desc.astype(str).tolist()
+        self.nrow, self.ncol = len(desc), len(desc[0])
+        
         self.state = None
         
-        self.hole_states = [5, 7, 11, 12]
-        self.goal_state = 15
+        self.hole_states = []
+        self.goal_state = None
+        self.start_state = None
+        
+        for i, row in enumerate(desc):
+            for j, cell in enumerate(row):
+                if cell == 'H':
+                    self.hole_states.append(i * self.ncol + j)
+                elif cell == 'G':
+                    self.goal_state = i * self.ncol + j
+                elif cell == 'S':
+                    self.start_state = i * self.ncol + j
         
         self.shaped_rewards = self.calculate_shaped_reward()
         
@@ -70,7 +90,7 @@ class EnvironmentWrapper:
         return self.is_hole(state) or self.is_goal(state)
 
     def reset(self):
-        self.state = 0
+        self.state = self.start_state
         return self.state
 
     def get_state(self):
@@ -86,8 +106,9 @@ class EnvironmentWrapper:
         return row * self.ncol + col
 
 class SimulatorWrapper(EnvironmentWrapper):
-    def __init__(self, env_name='FrozenLake-v1', is_slippery=False):
-        super().__init__(env_name, is_slippery)
+    def __init__(self, env_name='FrozenLake-v1', is_slippery=False, 
+                 env=None, custom_map=None):
+        super().__init__(env_name, is_slippery, env)
 
     def take_action(self, action):
         if np.random.random() < 0.1:

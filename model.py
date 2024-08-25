@@ -46,7 +46,7 @@ class MonteCarloTreeSearch:
         self.N = defaultdict(int) 
         self.children = defaultdict(list)
         self.exploration_weight = math.sqrt(2)
-        self.max_depth = 10
+        self.max_depth = 100
         self.gamma = 0.95
 
     def expand(self, state):
@@ -189,11 +189,6 @@ class MonteCarloTreeSearch:
         q = reward + self.gamma * self.search(next_state, depth + 1)
         self.update_value(state, action, q)
         return q
-
-    def update_value(self, state, action, q):
-        self.N[state] += 1
-        self.N[(state, action)] += 1
-        self.Q[(state, action)] += (q - self.Q[(state, action)]) / self.N[(state, action)]
 
     def simulate_action(self, state, action):
         self.simulator.set_state(state)

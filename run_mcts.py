@@ -1,7 +1,11 @@
 from model import MonteCarloTreeSearch
 from environment_wrapper import EnvironmentWrapper, SimulatorWrapper
 import random
-import pdb; pdb.set_trace()
+# import pdb; pdb.set_trace()
+
+GREEN = "\033[92m"
+RED = "\033[91m"
+RESET = "\033[0m"
 
 def print_grid(env, current_state):
     grid = [['.' for _ in range(env.ncol)] for _ in range(env.nrow)]
@@ -21,7 +25,7 @@ def print_grid(env, current_state):
     print()
 
 def main():
-    random.seed(42)
+    random.seed(1)
     env = EnvironmentWrapper()
     simulator = SimulatorWrapper()
     mcts = MonteCarloTreeSearch(env=env, simulator=simulator)
@@ -59,6 +63,11 @@ def main():
     print_grid(env, state)
     print(f"\nEpisode ended after {steps} steps.")
     print(f"Total reward: {total_reward}")
+
+    if env.is_goal(state):
+        print(f"{GREEN}Goal state reached!{RESET}")
+    else:
+        print(f"{RED}Goal state not reached.{RESET}")
 
 if __name__ == "__main__":
     main()
