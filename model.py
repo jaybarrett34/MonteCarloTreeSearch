@@ -115,28 +115,29 @@ class MonteCarloTreeSearch:
             if 0 <= nr < self.env.nrow and 0 <= nc < self.env.ncol:
                 neighbor_state = self.env.pos_to_index((nr, nc))
                 if self.env.is_hole(neighbor_state):
-                    hole_penalty += 1
+                    hole_penalty += 2  # Increased from 1 to 2
         
         max_distance = self.env.nrow + self.env.ncol - 2
         normalized_distance = 1 - (distance_to_goal / max_distance)
         normalized_hole_penalty = hole_penalty / 4
         
-        safety_weight = 0.3
-        goal_weight = 0.7
-        heuristic_value = (goal_weight * normalized_distance - 
-                        safety_weight * normalized_hole_penalty)
+        safety_weight = 0.5  # Increased from 0.3
+        goal_weight = 0.5  # Decreased from 0.7
+        base_value = -10.0
+        heuristic_value = base_value + (goal_weight * normalized_distance * 10 - 
+                        safety_weight * normalized_hole_penalty * 10)  # Increased hole penalty impact
         
-        return heuristic_value
-
+        revisit_penalty = self.N[state] * -0.5  # Reduced from -1.0 to -0.5
+        
+        return heuristic_value + revisit_penalty
+    
     def simulate(self, state):
         current_state = state
         total_reward = 0
         depth = 0
         
         while not self.simulator.is_terminal(current_state) and depth < self.max_depth:
-            valid_actions = [a for a in range(self.env.action_space.n) if self.is_valid_action(current_state, a)]
-            action = random.choice(valid_actions)
-            
+            action = self.safe_random_action(current_state)
             next_state, reward = self.simulator.take_action(action)
             total_reward += reward * (self.gamma ** depth)
             current_state = next_state
@@ -163,11 +164,32 @@ class MonteCarloTreeSearch:
         return False
     
     def select_action(self, state):
-        if state not in self.children or random.random() < 0.3:  # 30% chance of random exploration
-            return random.choice([a for a in range(self.env.action_space.n) if self.is_valid_action(state, a)])
+        if state not in self.children or random.random() < 0.05:  # Reduced random exploration further
+            return self.safe_random_action(state)
         
-        return max(self.children[state], key=lambda a: self.uct_score(state, a))
+        scores = []
+        for action in self.children[state]:
+            next_state = self.get_next_state(state, action)
+            if self.env.is_hole(next_state):
+                continue  # Skip actions that lead directly to holes
+            
+            q_value = self.Q[(state, action)] / (self.N[(state, action)] + 1e-8)
+            exploration = math.sqrt(2) * math.sqrt(math.log(self.N[state] + 1) / (self.N[(state, action)] + 1e-8))
+            evaluation = self.evaluate(next_state)
+            
+            score = 2 * q_value + exploration + evaluation  # Give more weight to Q-value
+            scores.append((action, score))
+        
+        if not scores:  # If all actions lead to holes, choose the least visited action
+            return min(self.children[state], key=lambda a: self.N[(state, a)])
+        
+        return max(scores, key=lambda x: x[1])[0]
     
+    def safe_random_action(self, state):
+        valid_actions = [a for a in range(self.env.action_space.n) if self.is_valid_action(state, a)]
+        safe_actions = [a for a in valid_actions if not self.env.is_hole(self.get_next_state(state, a))]
+        return random.choice(safe_actions) if safe_actions else random.choice(valid_actions)
+        
     def uct_score(self, state, action):
         if self.N[(state, action)] == 0:
             return float('inf')
