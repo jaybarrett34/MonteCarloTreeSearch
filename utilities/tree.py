@@ -5,7 +5,6 @@ def vertical_lines(last_node_flags):
         if last_node_flag == False:
             vertical_lines.append(vertical_line + ' ' * 3)
         else:
-            # space between vertical lines
             vertical_lines.append(' ' * 4)
     return ''.join(vertical_lines)
 
@@ -30,52 +29,60 @@ class Tree:
             return True
         return False
 
-    def iter(self, identifier, depth, last_node_flags):
-        if identifier is None:
+    def iter(self, state, depth, last_node_flags):
+        if state is None:
             node = self.root
         else:
-            node = self.nodes[identifier]
+            node = self.nodes[state]
 
         if depth == 0:
             yield "", node
         else:
             yield vertical_lines(last_node_flags) + horizontal_line(last_node_flags), node
 
-        children = [self.nodes[identifier] for identifier in node.children_identifiers]
+        children = [self.nodes[state] for state in node.children_identifiers]
         last_index = len(children) - 1
 
         depth += 1
         for index, child in enumerate(children):
             last_node_flags.append(index == last_index)
-            for edge, node in self.iter(child.identifier, depth, last_node_flags):
+            for edge, node in self.iter(child.state, depth, last_node_flags):
                 yield edge, node
             last_node_flags.pop()
 
     def add_node(self, node, parent=None):
-        self.nodes.update({node.identifier: node})
+        if isinstance(node.state, dict):
+            state = next(iter(node.state.values()))
+            node.state = state
+        
+        self.nodes.update({node.state: node})
 
         if parent is None:
             self.root = node
-            self.nodes[node.identifier].parent = None
+            self.nodes[node.state].parent = None
         else:
-            self.nodes[parent.identifier].children_identifiers.append(node.identifier)
-            self.nodes[node.identifier].parent_identifier=parent.identifier
+            if isinstance(parent.state, dict):
+                parent_state = next(iter(parent.state.values()))
+                parent.state = parent_state
+            
+            self.nodes[parent.state].children_identifiers.append(node.state)
+            self.nodes[node.state].parent_identifier = parent.state
 
     def children(self, node):
         children = []
-        for identifier in self.nodes[node.identifier].children_identifiers:
-            children.append(self.nodes[identifier])
+        for state in self.nodes[node.state].children_identifiers:
+            children.append(self.nodes[state])
         return children
 
     def parent(self, node):
-        parent_identifier = self.nodes[node.identifier].parent_identifier
-        if parent_identifier is None:
+        parent_state = self.nodes[node.state].parent_identifier
+        if parent_state is None:
             return None
         else:
-            return self.nodes[parent_identifier]
+            return self.nodes[parent_state]
 
     def show(self):
         lines = ""
-        for edge, node in self.iter(identifier=None, depth=0, last_node_flags=[]):
+        for edge, node in self.iter(state=None, depth=0, last_node_flags=[]):
             lines += "{}{}\n".format(edge, node)
         print(lines)
