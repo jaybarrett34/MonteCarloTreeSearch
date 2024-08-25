@@ -164,23 +164,19 @@ class MonteCarloTreeSearch:
         return False
     
     def select_action(self, state):
-        if state not in self.children or random.random() < 0.05:  # Reduced random exploration further
+        if state not in self.children or random.random() < 0.05:
             return self.safe_random_action(state)
         
         scores = []
         for action in self.children[state]:
             next_state = self.get_next_state(state, action)
             if self.env.is_hole(next_state):
-                continue  # Skip actions that lead directly to holes
+                continue
             
-            q_value = self.Q[(state, action)] / (self.N[(state, action)] + 1e-8)
-            exploration = math.sqrt(2) * math.sqrt(math.log(self.N[state] + 1) / (self.N[(state, action)] + 1e-8))
-            evaluation = self.evaluate(next_state)
-            
-            score = q_value + exploration + evaluation  # Give more weight to Q-value
-            scores.append((action, score))
+            uct_score = self.uct_score(state, action)
+            scores.append((action, uct_score))
         
-        if not scores:  # If all actions lead to holes, choose the least visited action
+        if not scores:
             return min(self.children[state], key=lambda a: self.N[(state, a)])
         
         return max(scores, key=lambda x: x[1])[0]
