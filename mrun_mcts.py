@@ -5,6 +5,7 @@ import gym
 import matplotlib.pyplot as plt
 import time
 import argparse
+import os
 
 GREEN = "\033[92m"
 RED = "\033[91m"
@@ -107,6 +108,21 @@ def plot_results(episodes, successes, steps_list, rewards_list, times_list):
     plt.tight_layout()
     plt.show()
 
+def read_custom_map(file_path):
+    with open(file_path, 'r') as file:
+        custom_map = [list(line.strip()) for line in file.readlines() if line.strip()]
+    
+    if not custom_map:
+        raise ValueError("Custom map file is empty.")
+    
+    nrow = len(custom_map)
+    ncol = len(custom_map[0])
+    
+    if any(len(row) != ncol for row in custom_map):
+        raise ValueError("Custom map rows have inconsistent lengths.")
+    
+    return custom_map
+
 def main():
     parser = argparse.ArgumentParser(description="Run MCTS on FrozenLake environment")
     parser.add_argument("-v", "--verbose", action="store_true", help="Increase output verbosity")
@@ -130,16 +146,18 @@ def main():
         map_choice = '4x4'
 
     if map_choice == 'custom':
-        custom_map = [
-            'SFFF',
-            'FFHH',
-            'FFHG',
-            'HFFF'
-        ]
-        gym_env = gym.make('FrozenLake-v1', desc=custom_map, is_slippery=False)
-    else:
+      custom_map_file = "custom_map.csv"
+      
+      if os.path.isfile(custom_map_file):
+          custom_map = read_custom_map(custom_map_file)
+          gym_env = gym.make('FrozenLake-v1', desc=custom_map, is_slippery=False)
+      else:
+          print(f"Custom map file '{custom_map_file}' not found. Using default 4x4 map.")
+          map_choice = '4x4'
+
+    if map_choice != 'custom':
         env_name, map_name = maps[map_choice]
-        gym_env = gym.make(env_name, desc=None, map_name=map_name, is_slippery=False)
+        gym_env = gym.make(env_name, map_name=map_name, is_slippery=False)
 
     env = EnvironmentWrapper(env=gym_env)
     simulator = SimulatorWrapper(env=gym_env)
