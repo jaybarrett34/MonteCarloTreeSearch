@@ -115,8 +115,8 @@ def main():
     random.seed(42)
     
     maps = {
-        '4x4': 'FrozenLake-v1',
-        '8x8': 'FrozenLake8x8-v1',
+        '4x4': ('FrozenLake-v1', "4x4"),
+        '8x8': ('FrozenLake-v1', "8x8"),
         'custom': None 
     }
 
@@ -129,22 +129,25 @@ def main():
         print("Invalid choice. Using default 4x4 map.")
         map_choice = '4x4'
 
-    custom_map = None
     if map_choice == 'custom':
         custom_map = [
             'SFFF',
-            'FFFF',
-            'FFFF',
-            'HFFG'
+            'FFHH',
+            'FFHG',
+            'HFFF'
         ]
+        gym_env = gym.make('FrozenLake-v1', desc=custom_map, is_slippery=False)
+    else:
+        env_name, map_name = maps[map_choice]
+        gym_env = gym.make(env_name, desc=None, map_name=map_name, is_slippery=False)
 
-    env = EnvironmentWrapper(env_name='FrozenLake-v1', is_slippery=False, custom_map=custom_map)
-    simulator = SimulatorWrapper(env_name='FrozenLake-v1', is_slippery=False, custom_map=custom_map)
+    env = EnvironmentWrapper(env=gym_env)
+    simulator = SimulatorWrapper(env=gym_env)
 
     print("\nInitial grid state:")
     print_grid(env, env.reset())
 
-    max_iterations = 5000
+    max_iterations = 10000
     num_episodes = int(input("Enter the number of episodes to run: "))
 
     successes = []

@@ -106,9 +106,8 @@ class EnvironmentWrapper:
         return row * self.ncol + col
 
 class SimulatorWrapper(EnvironmentWrapper):
-    def __init__(self, env_name='FrozenLake-v1', is_slippery=False, 
-                 env=None, custom_map=None):
-        super().__init__(env_name, is_slippery, env)
+    def __init__(self, env_name='FrozenLake-v1', is_slippery=False, custom_map=None, env=None):
+        super().__init__(env_name, is_slippery, custom_map, env)
 
     def take_action(self, action):
         if np.random.random() < 0.1:

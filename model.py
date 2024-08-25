@@ -46,7 +46,7 @@ class MonteCarloTreeSearch:
         self.N = defaultdict(int) 
         self.children = defaultdict(list)
         self.exploration_weight = math.sqrt(2)
-        self.max_depth = 100
+        self.max_depth = 200
         self.gamma = 0.95
 
     def expand(self, state):
@@ -173,8 +173,8 @@ class MonteCarloTreeSearch:
             return float('inf')
         
         exploitation = self.Q[(state, action)] / (self.N[(state, action)] + 1e-8)
-        exploration = math.sqrt(2 * math.log(self.N[state] + 1) / (self.N[(state, action)] + 1e-8))
-        return exploitation + 2 * exploration
+        exploration = math.sqrt(2) * math.sqrt(math.log(self.N[state] + 1) / (self.N[(state, action)] + 1e-8))
+        return exploitation + exploration
 
     def search(self, state, depth):
         if self.env.is_terminal(state) or depth >= self.max_depth:
