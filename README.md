@@ -1,63 +1,65 @@
-# Monte Carlo Tree Search
+# UCT Monte Carlo Tree Search (MCTS) for OpenAI Gym's FrozenLake
 
-## Introduction
-This project applies Monte Carlo Tree Search (MCTS) to a simple grid world. We use the Upper Confidence Bounds for Trees (UCT) algorithm. UCT is the most popular MCTS algorithm.
+This project implements the Upper Confidence Bound for Trees (UCT) variant of Monte Carlo Tree Search (MCTS) to solve the FrozenLake environment from OpenAI Gym. The agent learns to navigate a grid world and reach a goal state while avoiding holes.
 
-The implementation is based on [A Survey of Monte Carlo Tree Search Methods](http://mcts.ai/pubs/mcts-survey-master.pdf).
+## Features
 
-## Environment
+- Customizable grid size (4x4, 8x8) and custom maps
+- Stochastic environment simulation for more robust planning
+- Heuristic evaluation function to guide the search
+- Visualization of the agent's performance over multiple episodes
 
-We apply MCTS to a deterministic variant of the FrozenLake environment. In this environment the agent starts at S with the goal to move to G. The agent can walk over the 
-frozen surface F and needs to avoid holes H:
+## Requirements
 
-![grid states](images/grid_states.png).
+- Python 3.6+
+- OpenAI Gym
+- NumPy
+- Matplotlib
 
-The agent can take 4 possible actions:
-```
-0 left
-1 down
-2 right
-3 up
-```
+## Installation
 
+1. Clone the repository:
+   ```
+   git clone https://github.com/yourusername/uct-mcts-frozenlake.git
+   ```
 
-## Example
+2. Install the required packages:
+   ```
+   pip install -r requirements.txt
+   ```
 
-If we are in state 0 and move left (action=0) we will get to state 0 again. The tree policy adds the new state 0 to the old 
-state 0. The default policy uses the new state to simulate the reward. The simulation returns a reward of 0:
+## Usage
 
-```
-0: (action=None, visits=1, reward=0, ratio=0.0000)
-└── 0: (action=0, visits=1, reward=0, ratio=0.0000)
-```
+There are two main scripts in this project:
 
-After moving left there are 3 actions left (down, right, up). If we move down (action=1) we will get to state 4. 
-The tree policy adds the new state 4 to the tree. For this state the simulation returns a reward of 1. 
-This reward is backpropagated to all nodes visited during this iteration:
+1. `run_mcts.py`: This script runs a single episode of the UCT MCTS agent on the FrozenLake environment. It displays the grid, chosen actions, and rewards at each step. To run this script, use:
+   ```
+   python run_mcts.py
+   ```
 
-```
-0: (action=None, visits=4, reward=1, ratio=0.2500)
-├── 0: (action=0, visits=1, reward=0, ratio=0.0000)
-├── 0: (action=3, visits=1, reward=0, ratio=0.0000)
-├── 4: (action=1, visits=1, reward=1, ratio=1.0000)
-└── 1: (action=2, visits=1, reward=0, ratio=0.0000)
-```
+2. `mrun_mcts.py`: This script runs multiple episodes of the UCT MCTS agent and provides a more comprehensive analysis of the agent's performance. You will be prompted to choose a map (4x4, 8x8, or custom) and the number of episodes to run. The agent will then start learning and display its progress. After the specified number of episodes, the script will display the success rate, average steps, and average reward, as well as a plot of the agent's performance over the episodes. To run this script, use:
+   ```
+   python mrun_mcts.py
+   ```
 
-If state 0 is not expandable anymore the tree policy will select the child with the highest value
+You can also add the `-v` or `--verbose` flag to `mrun_mcts.py` for more detailed output during the learning process.
 
-```python
+## How it Works
 
-value = exploitation_term + exploration_term.
+The UCT MCTS algorithm works by building a search tree incrementally and biasing its growth towards promising branches. Each node in the tree represents a state, and each edge represents an action leading to a new state.
 
-```
+The algorithm follows four main steps:
 
-State 4 has the highest value and is therefore the state that we expand next:
+1. **Selection**: Starting from the root node, the algorithm selects the most promising child node based on the UCT score, which balances exploitation (choosing the best-performing action) and exploration (trying less-visited actions).
 
-```
-0: (action=None, visits=5, reward=1, ratio=0.2000)
-├── 0: (action=0, visits=1, reward=0, ratio=0.0000)
-├── 0: (action=3, visits=1, reward=0, ratio=0.0000)
-├── 4: (action=1, visits=2, reward=1, ratio=0.5000)
-│   └── 0: (action=3, visits=1, reward=0, ratio=0.0000)
-└── 1: (action=2, visits=1, reward=0, ratio=0.0000)
-```
+2. **Expansion**: When a leaf node is reached, the algorithm expands the tree by adding one or more child nodes corresponding to the available actions.
+
+3. **Simulation**: From the newly added node(s), the algorithm performs a random rollout (or playout) until a terminal state is reached or a maximum depth is exceeded. The reward is then backpropagated to update the statistics of the nodes along the path.
+
+4. **Backpropagation**: The reward obtained from the simulation is used to update the Q-values and visit counts of the nodes along the path from the expanded node to the root.
+
+These steps are repeated for a specified number of iterations or until a time budget is exhausted. The action with the highest Q-value at the root node is then selected as the best action to take in the current state.
+
+## License
+
+This project is open-source and available under the [MIT License](LICENSE).
