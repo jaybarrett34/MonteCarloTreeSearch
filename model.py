@@ -177,7 +177,7 @@ class MonteCarloTreeSearch:
             exploration = math.sqrt(2) * math.sqrt(math.log(self.N[state] + 1) / (self.N[(state, action)] + 1e-8))
             evaluation = self.evaluate(next_state)
             
-            score = 2 * q_value + exploration + evaluation  # Give more weight to Q-value
+            score = q_value + exploration + evaluation  # Give more weight to Q-value
             scores.append((action, score))
         
         if not scores:  # If all actions lead to holes, choose the least visited action
